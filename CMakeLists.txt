@@ -12,6 +12,7 @@ endif()
 
 add_executable (CPUDemo
     src/main.cpp
+    src/benchmarks.cpp
 )
 set_target_properties(CPUDemo PROPERTIES CXX_STANDARD 17)
 target_include_directories(CPUDemo PRIVATE include)
@@ -21,7 +22,8 @@ target_link_libraries (CPUDemo
     ${OpenCV_LIBS})
 
 add_executable (GPUDemo
-    src/main.cu
+    src/main.cpp
+    src/benchmarks.cu
 )
 set_target_properties(GPUDemo PROPERTIES CXX_STANDARD 17)
 target_include_directories(GPUDemo PRIVATE include)

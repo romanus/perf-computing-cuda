@@ -1,12 +1,12 @@
-#include <iostream>
 #include <vector>
 #include <cassert>
 #include <numeric>
 
-#include <cuda_runtime_api.h>
 #include <cuda.h>
+#include <cuda_runtime_api.h>
 
-#include <opencv2/imgcodecs.hpp>
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 
 #include "main.h"
 
@@ -84,8 +84,8 @@ __global__ void SumPixels(const uint8_t* data, uint64_t* output)
 {
     __shared__ uint64_t sdata[BLOCK_SIZE_1024];
 
-    unsigned int tid = threadIdx.x;
-    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    const auto tid = threadIdx.x;
+    const auto i = blockIdx.x * blockDim.x + threadIdx.x;
     sdata[tid] = data[3 * i];
     __syncthreads();
 
@@ -128,8 +128,8 @@ void SumPixelsBenchmark(const cv::Mat& image)
         const auto imageDevice = DeviceAlloc(image);
 
         const auto pixelsCount = imageDevice.m_pixelsCount;
-        const auto gridSize = pixelsCount / BLOCK_SIZE_1024;
-        const auto gridSize2 = gridSize / BLOCK_SIZE_512;
+        const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_1024);
+        const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
         auto sumDevice = DeviceAlloc(sizeof(uint64_t) * gridSize);
         auto sumDevice2 = DeviceAlloc(sizeof(uint64_t) * gridSize2);
 
@@ -230,13 +230,7 @@ void ReducePixelsBenchmark(const cv::Mat& image)
     std::cout << "------------------------------------\n" << std::endl;
 }
 
-int main()
+void FilterBenchmark(const cv::Mat& image)
 {
-    const auto image = cv::imread(imgPath, cv::IMREAD_COLOR);
-    assert(image.type() == CV_8UC3);
 
-    SumPixelsBenchmark(image);
-    ReducePixelsBenchmark(image);
-
-    return 0;
 }

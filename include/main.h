@@ -1,4 +1,7 @@
+#include <iostream>
 #include <chrono>
+
+#include <opencv2/imgcodecs.hpp>
 
 constexpr auto imgPath = "../resources/scenery.jpg";
 
@@ -23,3 +26,7 @@ struct MeasureTime
     std::chrono::steady_clock::time_point m_begin;
     std::string m_message;
 };
+
+void SumPixelsBenchmark(const cv::Mat& image);
+void ReducePixelsBenchmark(const cv::Mat& image);
+void FilterBenchmark(const cv::Mat& image);
