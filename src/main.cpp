@@ -11,9 +11,14 @@ uint64_t SumPixels(const uint8_t* data, size_t pixelsCount)
     // sum over the first channel: B (because BGR)
 
     auto sum = uint64_t{ 0 };
-    for (size_t i = 0; i < pixelsCount; ++i)
+    volatile auto vi = 0;
+    for (int i = 0; i < IMAGE_MULTIPLIER; ++i)
     {
-        sum += data[3 * i];
+        vi = i;
+        for (size_t i = 0; i < pixelsCount; ++i)
+        {
+            sum += data[3 * i];
+        }
     }
     return sum;
 }
@@ -25,7 +30,7 @@ void SumPixelsBenchmark(const cv::Mat& image)
     const auto pixelsCount = static_cast<size_t>(image.rows) * image.cols;
 
     {
-        const auto timeLock = MeasureTime("Time");
+        const auto timeLock = MeasureTime("Time without copy");
         const volatile auto sum = SumPixels(image.data, pixelsCount);
     }
 
@@ -34,7 +39,17 @@ void SumPixelsBenchmark(const cv::Mat& image)
 
 uint8_t ReducePixels(const uint8_t* data, size_t pixelsCount)
 {
-    return std::reduce(data, data + pixelsCount, std::numeric_limits<uint8_t>::max(), [](const auto & val1, const auto & val2) { return std::min(val1, val2); });
+    std::vector<uint8_t> minValues(IMAGE_MULTIPLIER);
+    volatile auto vi = 0;
+
+    for (int i = 0; i < IMAGE_MULTIPLIER; ++i)
+    {
+        vi = i;
+        // this is going not through a single channel, but through 'pixelsCount' sequential pixels. But still, we can estimate timings here.
+        minValues[i] = std::reduce(data, data + pixelsCount, std::numeric_limits<uint8_t>::max(), [](const auto& val1, const auto& val2) { return std::min(val1, val2); });
+    }
+
+    return std::reduce(minValues.begin(), minValues.end(), std::numeric_limits<uint8_t>::max(), [](const auto& val1, const auto& val2) { return std::min(val1, val2); });
 }
 
 void ReducePixelsBenchmark(const cv::Mat& image)
@@ -44,7 +59,7 @@ void ReducePixelsBenchmark(const cv::Mat& image)
     const auto pixelsCount = static_cast<size_t>(image.rows) * image.cols;
 
     {
-        const auto timeLock = MeasureTime("Time");
+        const auto timeLock = MeasureTime("Time without copy");
         const volatile auto minValue = ReducePixels(image.data, pixelsCount);
     }
 

@@ -1,6 +1,9 @@
 #include <chrono>
 
-const auto imgPath = "../resources/scenery.jpg";
+constexpr auto imgPath = "../resources/scenery.jpg";
+
+// we stack 32 images vertically; ~3Gb image is allocated, ~1M pixels
+constexpr auto IMAGE_MULTIPLIER = size_t{ 32 };
 
 struct MeasureTime
 {
