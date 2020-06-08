@@ -2,82 +2,10 @@
 #include <cassert>
 #include <numeric>
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "main.h"
+#include "main.cuh"
 
 // Approaches are from the presentation "Optimizing Parallel Reduction in CUDA"
 // link: http://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
-
-constexpr auto BLOCK_SIZE_1024 = 1024; // number of threads per block
-constexpr auto BLOCK_SIZE_512 = 512;
-
-#pragma region Utils
-
-struct DeviceAlloc
-{
-    DeviceAlloc(const cv::Mat& image)
-    {
-        const auto imageSize = sizeof(uint8_t) * image.rows * image.cols * image.channels();
-        m_size = IMAGE_MULTIPLIER * imageSize;
-        cudaMalloc((void**)&m_deviceData, m_size);
-        cudaMemcpy(m_deviceData, image.data, imageSize, cudaMemcpyHostToDevice);
-
-        for (int i = 1; i < IMAGE_MULTIPLIER; ++i)
-        {
-            cudaMemcpy(m_deviceData + i * imageSize, m_deviceData, imageSize, cudaMemcpyDeviceToDevice);
-        }
-        m_pixelsCount = IMAGE_MULTIPLIER * image.rows * image.cols;
-    }
-
-    DeviceAlloc(size_t size)
-    {
-        m_size = size;
-        cudaMalloc((void**)&m_deviceData, m_size);
-        cudaMemset(m_deviceData, 0, m_size);
-    }
-
-    void CopyToHost(void* dst) const
-    {
-        cudaMemcpy(dst, m_deviceData, m_size, cudaMemcpyDeviceToHost);
-    }
-
-    ~DeviceAlloc()
-    {
-        cudaFree(m_deviceData);
-    }
-
-    uint8_t* m_deviceData;
-    size_t m_size;
-    size_t m_pixelsCount;
-};
-
-template<class T>
-__device__ const T& min(const T& a, const T& b)
-{
-    return (b < a) ? b : a;
-}
-
-template<class ForwardIt>
-__device__ ForwardIt min_element(ForwardIt first, ForwardIt last)
-{
-    if (first == last) return last;
-
-    ForwardIt smallest = first;
-    ++first;
-    for (; first != last; ++first) {
-        if (*first < *smallest) {
-            smallest = first;
-        }
-    }
-    return smallest;
-}
-
-#pragma endregion
 
 // Reduction #1: Interleaved Addressing
 __global__ void SumPixels(const uint8_t* data, uint64_t* output)
@@ -120,7 +48,7 @@ __global__ void SumPixels2(const uint64_t* data, uint64_t* output)
 
 void SumPixelsBenchmark(const cv::Mat& image)
 {
-    std::cout << "---------- PIXELS SUMMATION ----------\n";
+    std::cout << "--------- PIXELS SUMMATION ---------\n";
 
     {
         const auto timeLock = MeasureTime("Time with copy");
@@ -203,34 +131,33 @@ __global__ void ReducePixels2(const uint8_t* data, uint8_t* output)
 
 void ReducePixelsBenchmark(const cv::Mat& image)
 {
-    std::cout << "---------- PIXELS REDUCTION ----------\n";
+    std::cout << "--------- PIXELS REDUCTION ---------\n";
 
     {
-        const auto timeLock = MeasureTime("Time with copy");
+        const auto timeLock = MeasureTime("Time computing+load+unload");
         const auto imageDevice = DeviceAlloc(image);
 
         const auto pixelsCount = imageDevice.m_pixelsCount;
-        const auto gridSize = pixelsCount / BLOCK_SIZE_512 / 2;
-        const auto gridSize2 = gridSize / BLOCK_SIZE_512;
+        const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_512 / 2);
+        const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
 
         auto minDevice = DeviceAlloc(gridSize);
         auto minDevice2 = DeviceAlloc(gridSize2);
 
         {
-            const auto timeLock2 = MeasureTime("Time without copy");
-            ReducePixels<<<gridSize, BLOCK_SIZE_512>>>(imageDevice.m_deviceData, minDevice.m_deviceData);
-            ReducePixels2<<<gridSize2, BLOCK_SIZE_512>>>(minDevice.m_deviceData, minDevice2.m_deviceData);
-        }
+            const auto timeLock2 = MeasureTime("Time computing+unload");
 
-        auto minVector = std::vector<uint8_t>(gridSize2); // ~2Kb
-        minDevice2.CopyToHost(minVector.data());
-        const volatile auto minValue = *std::min_element(minVector.begin(), minVector.end());
+            {
+                const auto timeLock3 = MeasureTime("Time computing");
+                ReducePixels<<<gridSize, BLOCK_SIZE_512>>>(imageDevice.m_deviceData, minDevice.m_deviceData);
+                ReducePixels2<<<gridSize2, BLOCK_SIZE_512>>>(minDevice.m_deviceData, minDevice2.m_deviceData);
+            }
+
+            auto minVector = std::vector<uint8_t>(gridSize2); // ~2Kb
+            minDevice2.CopyToHost(minVector.data());
+            const volatile auto minValue = *std::min_element(minVector.begin(), minVector.end());
+        }
     }
 
     std::cout << "------------------------------------\n" << std::endl;
-}
-
-void FilterBenchmark(const cv::Mat& image)
-{
-
 }

@@ -24,6 +24,7 @@ target_link_libraries (CPUDemo
 add_executable (GPUDemo
     src/main.cpp
     src/benchmarks.cu
+    src/filter.cu
 )
 set_target_properties(GPUDemo PROPERTIES CXX_STANDARD 17)
 target_include_directories(GPUDemo PRIVATE include)

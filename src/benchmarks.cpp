@@ -22,7 +22,7 @@ uint64_t SumPixels(const uint8_t* data, size_t pixelsCount)
 
 void SumPixelsBenchmark(const cv::Mat& image)
 {
-    std::cout << "---------- PIXELS SUMMATION ----------\n";
+    std::cout << "--------- PIXELS SUMMATION ---------\n";
 
     const auto pixelsCount = static_cast<size_t>(image.rows) * image.cols;
 
@@ -51,7 +51,7 @@ uint8_t ReducePixels(const uint8_t* data, size_t pixelsCount)
 
 void ReducePixelsBenchmark(const cv::Mat& image)
 {
-    std::cout << "---------- PIXELS REDUCTION ----------\n";
+    std::cout << "--------- PIXELS REDUCTION ---------\n";
 
     const auto pixelsCount = static_cast<size_t>(image.rows) * image.cols;
 
@@ -65,5 +65,9 @@ void ReducePixelsBenchmark(const cv::Mat& image)
 
 void FilterBenchmark(const cv::Mat& image)
 {
+    std::cout << "----------- CONVOLUTION ------------\n";
 
+    //
+
+    std::cout << "------------------------------------\n" << std::endl;
 }
