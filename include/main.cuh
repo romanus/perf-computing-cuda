@@ -1,8 +1,14 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
+#ifndef __CUDACC__
+#define __CUDACC__
+#endif
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+
+#include "device_functions.h"
 
 #include "main.h"
 
@@ -68,5 +74,3 @@ __device__ ForwardIt min_element(ForwardIt first, ForwardIt last)
     }
     return smallest;
 }
-
-__device__ void __syncthreads();
