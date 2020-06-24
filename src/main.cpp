@@ -7,6 +7,10 @@ int main()
 
     SumPixelsBenchmark(image);
     ReducePixelsBenchmark(image);
+
+    auto imageFloat = cv::Mat{};
+    image.convertTo(imageFloat, CV_32F);
+    assert(imageFloat.type() == CV_32FC3);
     FilterBenchmark(image);
 
     return 0;

@@ -2,6 +2,7 @@
 #include <chrono>
 
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 
 constexpr auto imgPath = "../resources/scenery.jpg";
 

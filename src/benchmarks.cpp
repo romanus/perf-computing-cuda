@@ -67,7 +67,12 @@ void FilterBenchmark(const cv::Mat& image)
 {
     std::cout << "----------- CONVOLUTION ------------\n";
 
-    //
+    auto blurred = cv::Mat{};
+
+    {
+        const auto timeLock = MeasureTime("Time");
+        cv::GaussianBlur(image, blurred, cv::Size(5, 5), 0);
+    }
 
     std::cout << "------------------------------------\n" << std::endl;
 }
