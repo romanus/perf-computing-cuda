@@ -19,16 +19,17 @@ struct DeviceAlloc
 {
     DeviceAlloc(const cv::Mat& image)
     {
-        const auto imageSize = sizeof(uint8_t) * image.rows * image.cols * image.channels();
-        m_size = IMAGE_MULTIPLIER * imageSize;
+        auto multiplier = size_t{};
+        const auto imageSize = ComputeSize(image, &multiplier);
+        m_size = multiplier * imageSize;
         cudaMalloc((void**)&m_deviceData, m_size);
         cudaMemcpy(m_deviceData, image.data, imageSize, cudaMemcpyHostToDevice);
 
-        for (int i = 1; i < IMAGE_MULTIPLIER; ++i)
+        for (int i = 1; i < multiplier; ++i)
         {
             cudaMemcpy(m_deviceData + i * imageSize, m_deviceData, imageSize, cudaMemcpyDeviceToDevice);
         }
-        m_pixelsCount = IMAGE_MULTIPLIER * image.rows * image.cols;
+        m_pixelsCount = multiplier * image.rows * image.cols;
     }
 
     DeviceAlloc(size_t size)
@@ -37,6 +38,14 @@ struct DeviceAlloc
         m_pixelsCount = static_cast<size_t>(-1);
         cudaMalloc((void**)&m_deviceData, m_size);
         cudaMemset(m_deviceData, 0, m_size);
+    }
+
+    static size_t ComputeSize(const cv::Mat& image, size_t* multiplier = nullptr)
+    {
+        // multiplier is the recommended multiplier so we don't try to allocate more memory than GPU has
+        if(multiplier) *multiplier = IMAGE_MULTIPLIER / (image.elemSize1() * image.channels());
+        return image.elemSize1() * image.channels() * image.rows * image.cols;
+        
     }
 
     void CopyToHost(void* dst) const

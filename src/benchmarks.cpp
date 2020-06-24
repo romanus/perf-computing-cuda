@@ -67,11 +67,26 @@ void FilterBenchmark(const cv::Mat& image)
 {
     std::cout << "----------- CONVOLUTION ------------\n";
 
-    auto blurred = cv::Mat{};
+    auto blurred = image.clone(); // no allocation is performed in a loop
+
+    const auto kernel = cv::getGaussianKernel(5, -1, CV_32F);
 
     {
-        const auto timeLock = MeasureTime("Time");
-        cv::GaussianBlur(image, blurred, cv::Size(5, 5), 0);
+        const auto timeLock = MeasureTime("Time cv::GaussianBlur");
+
+        for (int i = 0; i < IMAGE_MULTIPLIER; ++i)
+        {
+            cv::GaussianBlur(image, blurred, cv::Point(5, 5), 0, 0, cv::BorderTypes::BORDER_CONSTANT);
+        }
+    }
+
+    {
+        const auto timeLock = MeasureTime("Time cv::sepFilter2D");
+
+        for (int i = 0; i < IMAGE_MULTIPLIER; ++i)
+        {
+            cv::sepFilter2D(image, blurred, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+        }
     }
 
     std::cout << "------------------------------------\n" << std::endl;

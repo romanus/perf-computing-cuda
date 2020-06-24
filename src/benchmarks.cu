@@ -68,6 +68,7 @@ void SumPixelsBenchmark(const cv::Mat& image)
             SumPixels2<<<gridSize2, BLOCK_SIZE_512>>>((const uint64_t*)sumDevice.m_deviceData, (uint64_t*)sumDevice2.m_deviceData);
         }
 
+        cudaDeviceSynchronize();
         auto sumVector = std::vector<uint64_t>(gridSize2); // ~2Kb
         sumDevice2.CopyToHost(sumVector.data());
         const volatile auto sum = std::accumulate(sumVector.begin(), sumVector.end(), uint64_t{ 0 });
@@ -153,6 +154,7 @@ void ReducePixelsBenchmark(const cv::Mat& image)
                 ReducePixels2<<<gridSize2, BLOCK_SIZE_512>>>(minDevice.m_deviceData, minDevice2.m_deviceData);
             }
 
+            cudaDeviceSynchronize();
             auto minVector = std::vector<uint8_t>(gridSize2); // ~2Kb
             minDevice2.CopyToHost(minVector.data());
             const volatile auto minValue = *std::min_element(minVector.begin(), minVector.end());
