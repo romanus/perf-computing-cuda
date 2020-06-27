@@ -1,0 +1,140 @@
+PS C:\Users\trom\dev\uni\perf-computing-cuda> mkdir build
+
+
+    Directory: C:\Users\trom\dev\uni\perf-computing-cuda
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+d-----       27.06.2020     22:41                build
+
+
+PS C:\Users\trom\dev\uni\perf-computing-cuda> cd build
+PS C:\Users\trom\dev\uni\perf-computing-cuda\build> cmake -G "Visual Studio 16 2019" ..
+-- Selecting Windows SDK version 10.0.18362.0 to target Windows 10.0.18363.
+-- The CXX compiler identification is MSVC 19.26.28806.0
+-- The CUDA compiler identification is NVIDIA 10.2.89
+-- Check for working CXX compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/VC/Tools/MSVC/14.26.28801/bin/Hostx64/x64/cl.exe
+-- Check for working CXX compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Professional/VC/Tools/MSVC/14.26.28801/bin/Hostx64/x64/cl.exe - works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Check for working CUDA compiler: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin/nvcc.exe - works
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- OpenCV ARCH: x64
+-- OpenCV RUNTIME: vc16
+-- OpenCV STATIC: ON
+-- Found OpenCV: C:/Users/trom/dev/uni/perf-computing-cuda/3rd_party/opencv (found version "4.2.0")
+-- Found OpenCV 4.2.0 in C:/Users/trom/dev/uni/perf-computing-cuda/3rd_party/opencv/x64/vc16/lib
+-- You might need to add C:\Users\trom\dev\uni\perf-computing-cuda\3rd_party\opencv\x64\vc16\bin to your PATH to be able to run your applications.
+-- OPENCV FOUND
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/Users/trom/dev/uni/perf-computing-cuda/build
+PS C:\Users\trom\dev\uni\perf-computing-cuda\build> cmake --build . --config Release
+Microsoft (R) Build Engine version 16.6.0+5ff7b0c9e for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+  Checking Build System
+  Building Custom Rule C:/Users/trom/dev/uni/perf-computing-cuda/CMakeLists.txt
+  main.cpp
+  benchmarks.cpp
+  Generating Code...
+  CPUDemo.vcxproj -> C:\Users\trom\dev\uni\perf-computing-cuda\build\Release\CPUDemo.exe
+  Building Custom Rule C:/Users/trom/dev/uni/perf-computing-cuda/CMakeLists.txt
+  Compiling CUDA source file ..\src\benchmarks.cu...
+
+  C:\Users\trom\dev\uni\perf-computing-cuda\build>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\bin\nvcc.exe" -gencode=arch=compute_75,code=\"compute_75,comp
+  ute_75\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Tools\MSVC\14.26.28801\bin\HostX64\x64" -x cu -rdc=true -I"C:\User
+  s\trom\dev\uni\perf-computing-cuda\include" -I"C:\Users\trom\dev\uni\perf-computing-cuda\3rd_party\opencv\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUD
+  A\v10.2\include"     --keep-dir x64\Release -maxrregcount=0  --machine 64 --compile -cudart static -Xptxas -O3 -Xcompiler=-Ob2   -use_fast_math -DNDEBUG -D"CMAKE_INTDI
+  R=\"Release\"" -DWIN32 -D_WINDOWS -DNDEBUG -D"CMAKE_INTDIR=\"Release\"" -D_MBCS -Xcompiler "/EHsc /W3 /nologo /O2 /FdGPUDemo.dir\Release\vc142.pdb /FS /Zi  /MD /GR" -o
+   GPUDemo.dir\Release\benchmarks.obj "C:\Users\trom\dev\uni\perf-computing-cuda\src\benchmarks.cu"
+  benchmarks.cu
+  Compiling CUDA source file ..\src\filter.cu...
+
+  C:\Users\trom\dev\uni\perf-computing-cuda\build>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\bin\nvcc.exe" -gencode=arch=compute_75,code=\"compute_75,comp
+  ute_75\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Tools\MSVC\14.26.28801\bin\HostX64\x64" -x cu -rdc=true -I"C:\User
+  s\trom\dev\uni\perf-computing-cuda\include" -I"C:\Users\trom\dev\uni\perf-computing-cuda\3rd_party\opencv\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUD
+  A\v10.2\include"     --keep-dir x64\Release -maxrregcount=0  --machine 64 --compile -cudart static -Xptxas -O3 -Xcompiler=-Ob2   -use_fast_math -DNDEBUG -D"CMAKE_INTDI
+  R=\"Release\"" -DWIN32 -D_WINDOWS -DNDEBUG -D"CMAKE_INTDIR=\"Release\"" -D_MBCS -Xcompiler "/EHsc /W3 /nologo /O2 /FdGPUDemo.dir\Release\vc142.pdb /FS /Zi  /MD /GR" -o
+   GPUDemo.dir\Release\filter.obj "C:\Users\trom\dev\uni\perf-computing-cuda\src\filter.cu"
+  filter.cu
+  main.cpp
+
+  C:\Users\trom\dev\uni\perf-computing-cuda\build>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\bin\nvcc.exe" -dlink -o GPUDemo.dir\Release\GPUDemo.device-li
+  nk.obj -Xcompiler "/EHsc /W3 /nologo /O2 /Zi  /MD /GR" -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\lib\x64" ..\3rd_party\opencv\x64\vc16\lib\opencv_dnn
+  420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_gapi420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_highgui420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_ml420.lib ..
+  \3rd_party\opencv\x64\vc16\lib\opencv_objdetect420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_photo420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_stitching420.lib ..
+  \3rd_party\opencv\x64\vc16\lib\opencv_video420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_videoio420.lib cudadevrt.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_imgcode
+  cs420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_calib3d420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_features2d420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_flan
+  n420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_imgproc420.lib ..\3rd_party\opencv\x64\vc16\lib\opencv_core420.lib cudart_static.lib kernel32.lib user32.lib gdi32.lib
+   winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib -Wno-deprecated-gpu-targets -gencode=arch=compute_75,code=compute_75  --machine 64
+  GPUDemo.dir\Release\benchmarks.obj GPUDemo.dir\Release\filter.obj
+  opencv_dnn420.lib
+  opencv_gapi420.lib
+  opencv_highgui420.lib
+  opencv_ml420.lib
+  opencv_objdetect420.lib
+  opencv_photo420.lib
+  opencv_stitching420.lib
+  opencv_video420.lib
+  opencv_videoio420.lib
+  cudadevrt.lib
+  opencv_imgcodecs420.lib
+  opencv_calib3d420.lib
+  opencv_features2d420.lib
+  opencv_flann420.lib
+  opencv_imgproc420.lib
+  opencv_core420.lib
+  kernel32.lib
+  user32.lib
+  gdi32.lib
+  winspool.lib
+  shell32.lib
+  ole32.lib
+  oleaut32.lib
+  uuid.lib
+  comdlg32.lib
+  advapi32.lib
+  benchmarks.obj
+  filter.obj
+  GPUDemo.vcxproj -> C:\Users\trom\dev\uni\perf-computing-cuda\build\Release\GPUDemo.exe
+  Building Custom Rule C:/Users/trom/dev/uni/perf-computing-cuda/CMakeLists.txt
+PS C:\Users\trom\dev\uni\perf-computing-cuda\build> Release\CPUDemo.exe
+--------- PIXELS SUMMATION ---------
+Computation time: 102[ms]
+------------------------------------
+
+--------- PIXELS REDUCTION ---------
+Computation time: 185[ms]
+------------------------------------
+
+----------- CONVOLUTION ------------
+Computation time: 259[ms]
+------------------------------------
+
+PS C:\Users\trom\dev\uni\perf-computing-cuda\build> Release\GPUDemo.exe
+--------- PIXELS SUMMATION ---------
+Computation time: 59[ms]
+Load time: 332[ms]
+Unload time: 0[ms]
+------------------------------------
+
+--------- PIXELS REDUCTION ---------
+Computation time: 4[ms]
+Load time: 222[ms]
+Unload time: 0[ms]
+------------------------------------
+
+----------- CONVOLUTION ------------
+Computation time (row filter): 9[ms]
+Computation time (col filter): 5[ms]
+Load time: 250[ms]
+Unload time: 249[ms]
+CUDA algorithm matches OpenCV: true
+------------------------------------
