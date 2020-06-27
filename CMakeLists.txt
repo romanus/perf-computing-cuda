@@ -2,7 +2,10 @@ cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
 
 project (PerfComputingHW2 CXX CUDA)
 
-set(COMPUTE_VERSION "compute_75")
+if(NOT DEFINED COMPUTE_VERSION)
+    set(COMPUTE_VERSION "compute_75")
+endif()
+message(STATUS "Compute version set to ${COMPUTE_VERSION}")
 
 set(OpenCV_STATIC ON)
 find_package(OpenCV REQUIRED PATHS "${CMAKE_SOURCE_DIR}/3rd_party/opencv" NO_DEFAULT_PATH)

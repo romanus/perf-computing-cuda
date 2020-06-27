@@ -2,8 +2,7 @@
 
 ## Configuration
 
-1. Put correct `compute_xx` to CMakeLists.txt
-2. Copy OpenCV binaries to the `3rd_party` folder and add `3rd_party/opencv/x64/vc16/bin/` to $PATH:
+Copy OpenCV binaries to the `3rd_party` folder and add `3rd_party/opencv/x64/vc16/bin/` to $PATH:
 
 ```
 > dir /b 3rd_party\opencv
@@ -30,7 +29,7 @@ All log is in `log.txt`.
 ```
 > mkdir build
 > cd build
-> cmake -G "Visual Studio 16 2019" ..
+> cmake -G "Visual Studio 16 2019" -DCOMPUTE_VERSION=compute_75 ..
 > cmake --build . --config Release
 > Release\CPUDemo.exe
 --------- PIXELS SUMMATION ---------

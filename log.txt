@@ -6,11 +6,11 @@ PS C:\Users\trom\dev\uni\perf-computing-cuda> mkdir build
 
 Mode                LastWriteTime         Length Name
 ----                -------------         ------ ----
-d-----       27.06.2020     22:41                build
+d-----       27.06.2020     22:48                build
 
 
 PS C:\Users\trom\dev\uni\perf-computing-cuda> cd build
-PS C:\Users\trom\dev\uni\perf-computing-cuda\build> cmake -G "Visual Studio 16 2019" ..
+PS C:\Users\trom\dev\uni\perf-computing-cuda\build> cmake -G "Visual Studio 16 2019" -DCOMPUTE_VERSION=compute_75 ..
 -- Selecting Windows SDK version 10.0.18362.0 to target Windows 10.0.18363.
 -- The CXX compiler identification is MSVC 19.26.28806.0
 -- The CUDA compiler identification is NVIDIA 10.2.89
@@ -20,11 +20,12 @@ PS C:\Users\trom\dev\uni\perf-computing-cuda\build> cmake -G "Visual Studio 16 2
 -- Detecting CXX compiler ABI info - done
 -- Detecting CXX compile features
 -- Detecting CXX compile features - done
--- Check for working CUDA compiler: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin/nvcc.exe - works
+-- Check for working CUDA compiler: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin/nvcc.exe
 -- Detecting CUDA compiler ABI info
 -- Detecting CUDA compiler ABI info - done
 -- Detecting CUDA compile features
 -- Detecting CUDA compile features - done
+-- Compute version set to compute_75
 -- OpenCV ARCH: x64
 -- OpenCV RUNTIME: vc16
 -- OpenCV STATIC: ON
@@ -107,34 +108,34 @@ Copyright (C) Microsoft Corporation. All rights reserved.
   Building Custom Rule C:/Users/trom/dev/uni/perf-computing-cuda/CMakeLists.txt
 PS C:\Users\trom\dev\uni\perf-computing-cuda\build> Release\CPUDemo.exe
 --------- PIXELS SUMMATION ---------
-Computation time: 102[ms]
+Computation time: 90[ms]
 ------------------------------------
 
 --------- PIXELS REDUCTION ---------
-Computation time: 185[ms]
+Computation time: 187[ms]
 ------------------------------------
 
 ----------- CONVOLUTION ------------
-Computation time: 259[ms]
+Computation time: 222[ms]
 ------------------------------------
 
 PS C:\Users\trom\dev\uni\perf-computing-cuda\build> Release\GPUDemo.exe
 --------- PIXELS SUMMATION ---------
-Computation time: 59[ms]
-Load time: 332[ms]
+Computation time: 41[ms]
+Load time: 339[ms]
 Unload time: 0[ms]
 ------------------------------------
 
 --------- PIXELS REDUCTION ---------
-Computation time: 4[ms]
-Load time: 222[ms]
+Computation time: 5[ms]
+Load time: 221[ms]
 Unload time: 0[ms]
 ------------------------------------
 
 ----------- CONVOLUTION ------------
-Computation time (row filter): 9[ms]
-Computation time (col filter): 5[ms]
-Load time: 250[ms]
-Unload time: 249[ms]
+Computation time (row filter): 10[ms]
+Computation time (col filter): 4[ms]
+Load time: 265[ms]
+Unload time: 240[ms]
 CUDA algorithm matches OpenCV: true
 ------------------------------------
