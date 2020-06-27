@@ -32,25 +32,33 @@ __global__ void convolutionRowGPU(float32_t* d_Result, const float32_t* d_Data, 
 	int x;		// image based coordinate
 
 	// case1: left
-	if (blockIdx.x == 0)
+	x = x0 - KERNEL_RADIUS;
+	if (x < 0)
 	{
-		if (x0 <= KERNEL_RADIUS)
-		{
-			data[3 * (threadIdx.x + shift) + 0] = 0;
-			data[3 * (threadIdx.x + shift) + 1] = 0;
-			data[3 * (threadIdx.x + shift) + 2] = 0;
-		}
+		data[3 * (threadIdx.x + shift) + 0] = 0;
+		data[3 * (threadIdx.x + shift) + 1] = 0;
+		data[3 * (threadIdx.x + shift) + 2] = 0;
+	}
+	else
+	{
+		data[3 * (threadIdx.x + shift) + 0] = d_Data[3 * (gLoc - KERNEL_RADIUS) + 0];
+		data[3 * (threadIdx.x + shift) + 1] = d_Data[3 * (gLoc - KERNEL_RADIUS) + 1];
+		data[3 * (threadIdx.x + shift) + 2] = d_Data[3 * (gLoc - KERNEL_RADIUS) + 2];
 	}
 
 	// case2: right
-	if (blockIdx.x == blockDim.x - 1)
+	x = x0 + KERNEL_RADIUS;
+	if (x > dataW - 1)
 	{
-		if (x0 >= dataW - KERNEL_RADIUS)
-		{
-			data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 0] = 0;
-			data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 1] = 0;
-			data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 2] = 0;
-		}
+		data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 0] = 0;
+		data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 1] = 0;
+		data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 2] = 0;
+	}
+	else
+	{
+		data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 0] = d_Data[3 * (gLoc + KERNEL_RADIUS) + 0];
+		data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 1] = d_Data[3 * (gLoc + KERNEL_RADIUS) + 1];
+		data[3 * (threadIdx.x + 2 * KERNEL_RADIUS + shift) + 2] = d_Data[3 * (gLoc + KERNEL_RADIUS) + 2];
 	}
 
 	data[3 * (threadIdx.x + KERNEL_RADIUS + shift) + 0] = d_Data[3 * gLoc + 0];
@@ -69,19 +77,19 @@ __global__ void convolutionRowGPU(float32_t* d_Result, const float32_t* d_Data, 
 		sum[2] += data[3 * (x + i + shift) + 2] * d_Kernel[i + KERNEL_RADIUS];
 	}
 
-	d_Result[3 * gLoc + 0] = 32 * sum[0];
-	d_Result[3 * gLoc + 1] = 32 * sum[1];
-	d_Result[3 * gLoc + 2] = 32 * sum[2];
+	d_Result[3 * gLoc + 0] = sum[0];
+	d_Result[3 * gLoc + 1] = sum[1];
+	d_Result[3 * gLoc + 2] = sum[2];
 }
 
 __global__ void convolutionColGPU(float32_t* d_Result, const float32_t* d_Data, int dataW, int dataH)
 {
 	// Data cache: threadIdx.x , threadIdx.y
-	__shared__ float32_t data[3 * TILE_W * (TILE_H + KERNEL_RADIUS * 2)]; // 3 channels of TILE_H rows and (TILE_W + KERNEL_RADIUS * 2) columns
+	__shared__ float32_t data[3 * TILE_W * (TILE_H + KERNEL_RADIUS * 2)]; // 3 channels of (TILE_H + KERNEL_RADIUS * 2) rows and TILE_W columns
 
 	// original image based coordinate
 	const int y0 = threadIdx.y + IMUL(blockIdx.y, blockDim.y);
-	const int shift = threadIdx.y * (TILE_W);
+	const int shift = threadIdx.y * TILE_W;
 
 	// global mem address of this thread
 	const int gLoc = threadIdx.x +
@@ -111,7 +119,7 @@ __global__ void convolutionColGPU(float32_t* d_Result, const float32_t* d_Data, 
 
 	// case2: lower
 	y = y0 + KERNEL_RADIUS;
-	const int shift1 = shift + IMUL(blockDim.y, TILE_W);
+	const auto shift1 = shift + IMUL(2 * KERNEL_RADIUS, TILE_W);
 	if (y > dataH - 1)
 	{
 		data[3 * (threadIdx.x + shift1) + 0] = 0;
@@ -124,6 +132,10 @@ __global__ void convolutionColGPU(float32_t* d_Result, const float32_t* d_Data, 
 		data[3 * (threadIdx.x + shift1) + 1] = d_Data[3 * (gLoc + IMUL(dataW, KERNEL_RADIUS)) + 1];
 		data[3 * (threadIdx.x + shift1) + 2] = d_Data[3 * (gLoc + IMUL(dataW, KERNEL_RADIUS)) + 2];
 	}
+
+	data[3 * (threadIdx.x + shift + IMUL(TILE_W, KERNEL_RADIUS)) + 0] = d_Data[3 * gLoc + 0];
+	data[3 * (threadIdx.x + shift + IMUL(TILE_W, KERNEL_RADIUS)) + 1] = d_Data[3 * gLoc + 1];
+	data[3 * (threadIdx.x + shift + IMUL(TILE_W, KERNEL_RADIUS)) + 2] = d_Data[3 * gLoc + 2];
 
 	__syncthreads();
 
@@ -141,28 +153,25 @@ __global__ void convolutionColGPU(float32_t* d_Result, const float32_t* d_Data, 
 	d_Result[3 * gLoc + 2] = sum[2];
 }
 
-//Image width should be aligned to maximum coalesced read/write size
-//for best global memory performance in both row and column filter.
 constexpr auto KERNEL_SIZE = static_cast<int32_t>(KERNEL_W * sizeof(float32_t));
 
 void FilterBenchmark(const cv::Mat& image)
 {
 	std::cout << "----------- CONVOLUTION ------------\n";
 
-	const auto dw = image.cols;
-	const auto dh = image.rows;
-
-	const auto h_Kernel = cv::getGaussianKernel(KERNEL_SIZE, -1, CV_32F);
-
+	const auto h_Kernel = cv::getGaussianKernel(KERNEL_W, -1, CV_32F);
 	cudaMemcpyToSymbol(d_Kernel, h_Kernel.data, KERNEL_SIZE);
-
-	dim3 blocks(TILE_W, TILE_H);
-	dim3 grids(dw / TILE_W, dh / TILE_H);
 
 	auto multiplier = size_t{};
 	DeviceAlloc::ComputeSize(image, &multiplier);
 
-	auto h_Result = cv::Mat(cv::saturate_cast<int>(image.rows * multiplier), image.cols, CV_32FC3);
+	const auto dw = image.cols;
+	const auto dh = cv::saturate_cast<int>(image.rows * multiplier);
+
+	auto h_Result = cv::Mat(dh, dw, CV_32FC3);
+
+	dim3 blocks(TILE_W, TILE_H);
+	dim3 grids(dw / TILE_W, dh / TILE_H); // we assume that image width and height divide by TILE_W/TILE_H
 
 	{
 		const auto timeLock = MeasureTime("Time computing+load+unload");
@@ -178,17 +187,25 @@ void FilterBenchmark(const cv::Mat& image)
 			{
 				const auto timeLock3 = MeasureTime("Time computing");
 				convolutionRowGPU<<<grids, blocks>>>((float32_t*)d_Data.m_deviceData, (const float32_t*)d_Image.m_deviceData, dw, dh);
-				//convolutionColGPU<<<grids, blocks>>>((float32_t*)d_Result.m_deviceData, (const float32_t*)d_Data.m_deviceData, dw, dh);
+				convolutionColGPU<<<grids, blocks>>>((float32_t*)d_Result.m_deviceData, (const float32_t*)d_Data.m_deviceData, dw, dh);
 			}
 
 			cudaDeviceSynchronize();
-			d_Data.CopyToHost(h_Result.data);
+			d_Result.CopyToHost(h_Result.data);
 		}
 
 		cudaDeviceSynchronize();
 	}
 
-	cv::imwrite("C://Users/trom/Downloads/image.png", h_Result);
+	// compare the output and OpenCV output
+	
+	auto openCV_input = cv::Mat(dh, dw, CV_32FC3);
+	DeviceAlloc(image).CopyToHost(openCV_input.data);
+	auto openCV_output = cv::Mat{};
+	cv::sepFilter2D(openCV_input, openCV_output, CV_32F, h_Kernel, h_Kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+
+	const auto algoOutputEqual = std::equal(h_Result.datastart, h_Result.dataend, openCV_output.datastart);
+	std::cout << "The CUDA algorithm matches OpenCV's algo: " << std::boolalpha << algoOutputEqual << std::endl;
 
     std::cout << "------------------------------------\n" << std::endl;
 }

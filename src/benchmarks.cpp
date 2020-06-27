@@ -72,16 +72,7 @@ void FilterBenchmark(const cv::Mat& image)
     const auto kernel = cv::getGaussianKernel(5, -1, CV_32F);
 
     {
-        const auto timeLock = MeasureTime("Time cv::GaussianBlur");
-
-        for (int i = 0; i < IMAGE_MULTIPLIER; ++i)
-        {
-            cv::GaussianBlur(image, blurred, cv::Point(5, 5), 0, 0, cv::BorderTypes::BORDER_CONSTANT);
-        }
-    }
-
-    {
-        const auto timeLock = MeasureTime("Time cv::sepFilter2D");
+        const auto timeLock = MeasureTime("Time");
 
         for (int i = 0; i < IMAGE_MULTIPLIER; ++i)
         {
