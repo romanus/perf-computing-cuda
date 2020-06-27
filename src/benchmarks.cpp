@@ -23,10 +23,13 @@ void SumPixelsBenchmark(const cv::Mat& image)
 
     const auto pixelsCount = static_cast<size_t>(inputImage.rows) * inputImage.cols;
 
-    {
-        const auto timeLock = MeasureTime("Computation time");
-        const volatile auto sum = SumPixels(inputImage.data, pixelsCount);
-    }
+    auto timer = MeasureTime("Computation time");
+    timer.Start();
+
+    const volatile auto sum = SumPixels(inputImage.data, pixelsCount);
+
+    timer.Stop();
+    timer.Print();
 
     std::cout << "------------------------------------\n" << std::endl;
 }
@@ -45,10 +48,13 @@ void ReducePixelsBenchmark(const cv::Mat& image)
 
     const auto pixelsCount = static_cast<size_t>(inputImage.rows) * inputImage.cols;
 
-    {
-        const auto timeLock = MeasureTime("Computation time");
-        const volatile auto minValue = ReducePixels(inputImage.data, pixelsCount);
-    }
+    auto timer = MeasureTime("Computation time");
+    timer.Start();
+
+    const auto minValue = ReducePixels(inputImage.data, pixelsCount);
+
+    timer.Stop();
+    timer.Print();
 
     std::cout << "------------------------------------\n" << std::endl;
 }
@@ -62,11 +68,13 @@ void FilterBenchmark(const cv::Mat& image)
 
     const auto kernel = cv::getGaussianKernel(5, -1, CV_32F);
 
-    {
-        const auto timeLock = MeasureTime("Computation time");
+    auto timer = MeasureTime("Computation time");
+    timer.Start();
 
-        cv::sepFilter2D(image, blurred, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
-    }
+    cv::sepFilter2D(image, blurred, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+
+    timer.Stop();
+    timer.Print();
 
     std::cout << "------------------------------------\n" << std::endl;
 }

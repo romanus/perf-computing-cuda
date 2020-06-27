@@ -11,17 +11,26 @@ struct MeasureTime
     MeasureTime(const std::string& message)
     {
         m_message = message;
+    }
+
+    void Start()
+    {
         m_begin = std::chrono::steady_clock::now();
     }
 
-    ~MeasureTime()
+    void Stop()
     {
-        const auto end = std::chrono::steady_clock::now();
-        const auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds> (end - m_begin).count();
+        m_end = std::chrono::steady_clock::now();
+    }
+
+    void Print() const
+    {
+        const auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds> (m_end - m_begin).count();
         std::cout << m_message << ": " << time_ms << "[ms]\n";
     }
 
-    std::chrono::steady_clock::time_point m_begin;
+    std::chrono::steady_clock::time_point m_begin = {};
+    std::chrono::steady_clock::time_point m_end = {};
     std::string m_message;
 };
 

@@ -159,10 +159,15 @@ void FilterBenchmark(const cv::Mat& image)
 {
 	std::cout << "----------- CONVOLUTION ------------\n";
 
+	const auto inputImage = ImageMultiplier::Multiply(image);
+
+	auto loadTimer = MeasureTime("Load time");
+	auto unloadTimer = MeasureTime("Unload time");
+	auto computationRowTimer = MeasureTime("Computation time (row filter)");
+	auto computationColTimer = MeasureTime("Computation time (col filter)");
+
 	const auto h_Kernel = cv::getGaussianKernel(KERNEL_W, -1, CV_32F);
 	cudaMemcpyToSymbol(d_Kernel, h_Kernel.data, KERNEL_SIZE);
-
-	const auto inputImage = ImageMultiplier::Multiply(image);
 
 	const auto dw = inputImage.cols;
 	const auto dh = inputImage.rows;
@@ -172,28 +177,36 @@ void FilterBenchmark(const cv::Mat& image)
 	const dim3 blocks(TILE_W, TILE_H);
 	const dim3 grids(dw / TILE_W, dh / TILE_H); // we assume that image width and height divide by TILE_W/TILE_H
 
-	{
-		const auto timeLock = MeasureTime("Computation time+load+unload");
+	loadTimer.Start();
 
-		const DeviceAlloc d_Image(inputImage);
+	const DeviceAlloc d_Image(inputImage);
 
-		DeviceAlloc d_Result(d_Image.m_size);
-		DeviceAlloc d_Data(d_Image.m_size);
+	DeviceAlloc d_Result(d_Image.m_size);
+	DeviceAlloc d_Data(d_Image.m_size);
 
-		{
-			const auto timeLock = MeasureTime("Computation time+unload");
+	loadTimer.Stop();
+	computationRowTimer.Start();
 
-			{
-				const auto timeLock3 = MeasureTime("Computation time");
-				convolutionRowGPU<<<grids, blocks>>>((float32_t*)d_Data.m_deviceData, (const float32_t*)d_Image.m_deviceData, dw, dh);
-				cudaDeviceSynchronize();
-				convolutionColGPU<<<grids, blocks>>>((float32_t*)d_Result.m_deviceData, (const float32_t*)d_Data.m_deviceData, dw, dh);
-				cudaDeviceSynchronize();
-			}
+	convolutionRowGPU<<<grids, blocks>>>((float32_t*)d_Data.m_deviceData, (const float32_t*)d_Image.m_deviceData, dw, dh);
+	cudaDeviceSynchronize();
 
-			d_Result.CopyToHost(h_Result.data);
-		}
-	}
+	computationRowTimer.Stop();
+	computationColTimer.Start();
+
+	convolutionColGPU<<<grids, blocks>>>((float32_t*)d_Result.m_deviceData, (const float32_t*)d_Data.m_deviceData, dw, dh);
+	cudaDeviceSynchronize();
+
+	computationColTimer.Stop();
+	unloadTimer.Start();
+
+	d_Result.CopyToHost(h_Result.data);
+
+	unloadTimer.Stop();
+
+	computationRowTimer.Print();
+	computationColTimer.Print();
+	loadTimer.Print();
+	unloadTimer.Print();
 
 	// compare the output and OpenCV output
 	auto openCV_output = cv::Mat{};

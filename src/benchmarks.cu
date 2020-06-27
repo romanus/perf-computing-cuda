@@ -56,34 +56,40 @@ void SumPixelsBenchmark(const cv::Mat& image)
 
     const auto inputImage = ImageMultiplier::Multiply(image);
 
-    {
-        const auto timeLock = MeasureTime("Computation time+unload+load");
+    auto loadTimer = MeasureTime("Load time");
+    auto unloadTimer = MeasureTime("Unload time");
+    auto computationTime = MeasureTime("Computation time");
 
-        const DeviceAlloc imageDevice(inputImage);
+    loadTimer.Start();
 
-        const auto pixelsCount = imageDevice.m_pixelsCount;
-        const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_1024);
-        const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
-        DeviceAlloc sumDevice(sizeof(uint64_t) * gridSize);
-        DeviceAlloc sumDevice2(sizeof(uint64_t) * gridSize2);
+    const DeviceAlloc imageDevice(inputImage);
 
-        {
-            const auto timeLock2 = MeasureTime("Computation time+unload");
+    const auto pixelsCount = imageDevice.m_pixelsCount;
+    const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_1024);
+    const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
+    DeviceAlloc sumDevice(sizeof(uint64_t) * gridSize);
+    DeviceAlloc sumDevice2(sizeof(uint64_t) * gridSize2);
 
-            {
-                const auto timeLock3 = MeasureTime("Computation time");
+    loadTimer.Stop();
+    computationTime.Start();
 
-                SumPixels << <gridSize, BLOCK_SIZE_1024 >> > (imageDevice.m_deviceData, (uint64_t*)sumDevice.m_deviceData);
-                cudaDeviceSynchronize();
-                SumPixels2 << <gridSize2, BLOCK_SIZE_512 >> > ((const uint64_t*)sumDevice.m_deviceData, (uint64_t*)sumDevice2.m_deviceData);
-                cudaDeviceSynchronize();
-            }
+    SumPixels<<<gridSize, BLOCK_SIZE_1024>>> (imageDevice.m_deviceData, (uint64_t*)sumDevice.m_deviceData);
+    cudaDeviceSynchronize();
+    SumPixels2<<<gridSize2, BLOCK_SIZE_512>>> ((const uint64_t*)sumDevice.m_deviceData, (uint64_t*)sumDevice2.m_deviceData);
+    cudaDeviceSynchronize();
 
-            auto sumVector = std::vector<uint64_t>(gridSize2); // ~2Kb
-            sumDevice2.CopyToHost(sumVector.data());
-            const volatile auto sum = std::accumulate(sumVector.begin(), sumVector.end(), uint64_t{ 0 });
-        }
-    }
+    computationTime.Stop();
+    unloadTimer.Start();
+
+    auto sumVector = std::vector<uint64_t>(gridSize2); // ~2Kb
+    sumDevice2.CopyToHost(sumVector.data());
+    const volatile auto sum = std::accumulate(sumVector.begin(), sumVector.end(), uint64_t{ 0 });
+
+    unloadTimer.Stop();
+
+    computationTime.Print();
+    loadTimer.Print();
+    unloadTimer.Print();
 
     std::cout << "------------------------------------\n" << std::endl;
 }
@@ -147,33 +153,40 @@ void ReducePixelsBenchmark(const cv::Mat& image)
 
     const auto inputImage = ImageMultiplier::Multiply(image);
 
-    {
-        const auto timeLock = MeasureTime("Computation time+load+unload");
-        const DeviceAlloc imageDevice(inputImage);
+    auto loadTimer = MeasureTime("Load time");
+    auto unloadTime = MeasureTime("Unload time");
+    auto computationTime = MeasureTime("Computation time");
 
-        const auto pixelsCount = imageDevice.m_pixelsCount;
-        const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_512 / 2);
-        const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
+    loadTimer.Start();
+    const DeviceAlloc imageDevice(inputImage);
 
-        DeviceAlloc minDevice(gridSize);
-        DeviceAlloc minDevice2(gridSize2);
+    const auto pixelsCount = imageDevice.m_pixelsCount;
+    const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_512 / 2);
+    const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
 
-        {
-            const auto timeLock2 = MeasureTime("Computation time+unload");
+    DeviceAlloc minDevice(gridSize);
+    DeviceAlloc minDevice2(gridSize2);
 
-            {
-                const auto timeLock3 = MeasureTime("Computation time");
-                ReducePixels<<<gridSize, BLOCK_SIZE_512>>>(imageDevice.m_deviceData, minDevice.m_deviceData);
-                cudaDeviceSynchronize();
-                ReducePixels2<<<gridSize2, BLOCK_SIZE_512>>>(minDevice.m_deviceData, minDevice2.m_deviceData);
-                cudaDeviceSynchronize();
-            }
-            
-            auto minVector = std::vector<uint8_t>(gridSize2); // ~2Kb
-            minDevice2.CopyToHost(minVector.data());
-            const volatile auto minValue = *std::min_element(minVector.begin(), minVector.end());
-        }
-    }
+    loadTimer.Stop();
+    computationTime.Start();
+
+    ReducePixels<<<gridSize, BLOCK_SIZE_512>>>(imageDevice.m_deviceData, minDevice.m_deviceData);
+    cudaDeviceSynchronize();
+    ReducePixels2<<<gridSize2, BLOCK_SIZE_512>>>(minDevice.m_deviceData, minDevice2.m_deviceData);
+    cudaDeviceSynchronize();
+
+    computationTime.Stop();
+    unloadTime.Start();
+
+    auto minVector = std::vector<uint8_t>(gridSize2); // ~2Kb
+    minDevice2.CopyToHost(minVector.data());
+    const volatile auto minValue = *std::min_element(minVector.begin(), minVector.end());
+
+    unloadTime.Stop();
+
+    computationTime.Print();
+    loadTimer.Print();
+    unloadTime.Print();
 
     std::cout << "------------------------------------\n" << std::endl;
 }
