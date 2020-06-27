@@ -4,8 +4,12 @@
 
 #include "main.cuh"
 
+// IMPORTANT
 // Approaches are from the presentation "Optimizing Parallel Reduction in CUDA"
 // link: http://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+
+// IMPORTANT
+// The algorithms are applied 2 times to achieve better performance
 
 // Reduction #1: Interleaved Addressing
 __global__ void SumPixels(const uint8_t* data, uint64_t* output)
@@ -50,28 +54,35 @@ void SumPixelsBenchmark(const cv::Mat& image)
 {
     std::cout << "--------- PIXELS SUMMATION ---------\n";
 
-    {
-        const auto timeLock = MeasureTime("Time with copy");
+    const auto inputImage = ImageMultiplier::Multiply(image);
 
-        const auto imageDevice = DeviceAlloc(image);
+    {
+        const auto timeLock = MeasureTime("Computation time+unload+load");
+
+        const DeviceAlloc imageDevice(inputImage);
 
         const auto pixelsCount = imageDevice.m_pixelsCount;
         const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_1024);
         const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
-        auto sumDevice = DeviceAlloc(sizeof(uint64_t) * gridSize);
-        auto sumDevice2 = DeviceAlloc(sizeof(uint64_t) * gridSize2);
+        DeviceAlloc sumDevice(sizeof(uint64_t) * gridSize);
+        DeviceAlloc sumDevice2(sizeof(uint64_t) * gridSize2);
 
         {
-            const auto timeLock2 = MeasureTime("Time without copy");
+            const auto timeLock2 = MeasureTime("Computation time+unload");
 
-            SumPixels<<<gridSize, BLOCK_SIZE_1024>>>(imageDevice.m_deviceData, (uint64_t*)sumDevice.m_deviceData);
-            SumPixels2<<<gridSize2, BLOCK_SIZE_512>>>((const uint64_t*)sumDevice.m_deviceData, (uint64_t*)sumDevice2.m_deviceData);
+            {
+                const auto timeLock3 = MeasureTime("Computation time");
+
+                SumPixels << <gridSize, BLOCK_SIZE_1024 >> > (imageDevice.m_deviceData, (uint64_t*)sumDevice.m_deviceData);
+                cudaDeviceSynchronize();
+                SumPixels2 << <gridSize2, BLOCK_SIZE_512 >> > ((const uint64_t*)sumDevice.m_deviceData, (uint64_t*)sumDevice2.m_deviceData);
+                cudaDeviceSynchronize();
+            }
+
+            auto sumVector = std::vector<uint64_t>(gridSize2); // ~2Kb
+            sumDevice2.CopyToHost(sumVector.data());
+            const volatile auto sum = std::accumulate(sumVector.begin(), sumVector.end(), uint64_t{ 0 });
         }
-
-        cudaDeviceSynchronize();
-        auto sumVector = std::vector<uint64_t>(gridSize2); // ~2Kb
-        sumDevice2.CopyToHost(sumVector.data());
-        const volatile auto sum = std::accumulate(sumVector.begin(), sumVector.end(), uint64_t{ 0 });
     }
 
     std::cout << "------------------------------------\n" << std::endl;
@@ -134,27 +145,30 @@ void ReducePixelsBenchmark(const cv::Mat& image)
 {
     std::cout << "--------- PIXELS REDUCTION ---------\n";
 
+    const auto inputImage = ImageMultiplier::Multiply(image);
+
     {
-        const auto timeLock = MeasureTime("Time computing+load+unload");
-        const auto imageDevice = DeviceAlloc(image);
+        const auto timeLock = MeasureTime("Computation time+load+unload");
+        const DeviceAlloc imageDevice(inputImage);
 
         const auto pixelsCount = imageDevice.m_pixelsCount;
         const auto gridSize = static_cast<unsigned int>(pixelsCount / BLOCK_SIZE_512 / 2);
         const auto gridSize2 = static_cast<unsigned int>(gridSize / BLOCK_SIZE_512);
 
-        auto minDevice = DeviceAlloc(gridSize);
-        auto minDevice2 = DeviceAlloc(gridSize2);
+        DeviceAlloc minDevice(gridSize);
+        DeviceAlloc minDevice2(gridSize2);
 
         {
-            const auto timeLock2 = MeasureTime("Time computing+unload");
+            const auto timeLock2 = MeasureTime("Computation time+unload");
 
             {
-                const auto timeLock3 = MeasureTime("Time computing");
+                const auto timeLock3 = MeasureTime("Computation time");
                 ReducePixels<<<gridSize, BLOCK_SIZE_512>>>(imageDevice.m_deviceData, minDevice.m_deviceData);
+                cudaDeviceSynchronize();
                 ReducePixels2<<<gridSize2, BLOCK_SIZE_512>>>(minDevice.m_deviceData, minDevice2.m_deviceData);
+                cudaDeviceSynchronize();
             }
-
-            cudaDeviceSynchronize();
+            
             auto minVector = std::vector<uint8_t>(gridSize2); // ~2Kb
             minDevice2.CopyToHost(minVector.data());
             const volatile auto minValue = *std::min_element(minVector.begin(), minVector.end());

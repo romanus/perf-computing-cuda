@@ -7,8 +7,8 @@ constexpr auto KERNEL_W = (2 * KERNEL_RADIUS + 1); // 5 x 5 kernel
 
 __device__ __constant__ float32_t d_Kernel[KERNEL_W];
 
-constexpr auto TILE_W = 16;		// active cell width
-constexpr auto TILE_H = 16;		// active cell height
+constexpr auto TILE_W = 16;
+constexpr auto TILE_H = 16;
 
 #define IMUL(a,b) __mul24(a,b)
 
@@ -162,50 +162,45 @@ void FilterBenchmark(const cv::Mat& image)
 	const auto h_Kernel = cv::getGaussianKernel(KERNEL_W, -1, CV_32F);
 	cudaMemcpyToSymbol(d_Kernel, h_Kernel.data, KERNEL_SIZE);
 
-	auto multiplier = size_t{};
-	DeviceAlloc::ComputeSize(image, &multiplier);
+	const auto inputImage = ImageMultiplier::Multiply(image);
 
-	const auto dw = image.cols;
-	const auto dh = cv::saturate_cast<int>(image.rows * multiplier);
+	const auto dw = inputImage.cols;
+	const auto dh = inputImage.rows;
 
 	auto h_Result = cv::Mat(dh, dw, CV_32FC3);
 
-	dim3 blocks(TILE_W, TILE_H);
-	dim3 grids(dw / TILE_W, dh / TILE_H); // we assume that image width and height divide by TILE_W/TILE_H
+	const dim3 blocks(TILE_W, TILE_H);
+	const dim3 grids(dw / TILE_W, dh / TILE_H); // we assume that image width and height divide by TILE_W/TILE_H
 
 	{
-		const auto timeLock = MeasureTime("Time computing+load+unload");
+		const auto timeLock = MeasureTime("Computation time+load+unload");
 
-		const auto d_Image = DeviceAlloc(image);
+		const DeviceAlloc d_Image(inputImage);
 
-		auto d_Result = DeviceAlloc(image);
-		auto d_Data = DeviceAlloc(d_Image.m_size);
+		DeviceAlloc d_Result(d_Image.m_size);
+		DeviceAlloc d_Data(d_Image.m_size);
 
 		{
-			const auto timeLock = MeasureTime("Time computing+unload");
+			const auto timeLock = MeasureTime("Computation time+unload");
 
 			{
-				const auto timeLock3 = MeasureTime("Time computing");
+				const auto timeLock3 = MeasureTime("Computation time");
 				convolutionRowGPU<<<grids, blocks>>>((float32_t*)d_Data.m_deviceData, (const float32_t*)d_Image.m_deviceData, dw, dh);
+				cudaDeviceSynchronize();
 				convolutionColGPU<<<grids, blocks>>>((float32_t*)d_Result.m_deviceData, (const float32_t*)d_Data.m_deviceData, dw, dh);
+				cudaDeviceSynchronize();
 			}
 
-			cudaDeviceSynchronize();
 			d_Result.CopyToHost(h_Result.data);
 		}
-
-		cudaDeviceSynchronize();
 	}
 
 	// compare the output and OpenCV output
-	
-	auto openCV_input = cv::Mat(dh, dw, CV_32FC3);
-	DeviceAlloc(image).CopyToHost(openCV_input.data);
 	auto openCV_output = cv::Mat{};
-	cv::sepFilter2D(openCV_input, openCV_output, CV_32F, h_Kernel, h_Kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+	cv::sepFilter2D(inputImage, openCV_output, CV_32F, h_Kernel, h_Kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
 
-	const auto algoOutputEqual = std::equal(h_Result.datastart, h_Result.dataend, openCV_output.datastart);
-	std::cout << "The CUDA algorithm matches OpenCV's algo: " << std::boolalpha << algoOutputEqual << std::endl;
+	const auto algoOutputEqual = std::equal(h_Result.datastart, h_Result.dataend, openCV_output.datastart); // I'm really shocked that the output matches perfectly
+	std::cout << "CUDA algorithm matches OpenCV: " << std::boolalpha << algoOutputEqual << std::endl;
 
     std::cout << "------------------------------------\n" << std::endl;
 }

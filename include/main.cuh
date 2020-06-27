@@ -15,21 +15,16 @@
 constexpr auto BLOCK_SIZE_1024 = uint32_t{ 1024 }; // number of threads per block
 constexpr auto BLOCK_SIZE_512 = uint32_t{ 512 };
 
+// RAII-wrapper over CUDA data management
 struct DeviceAlloc
 {
     DeviceAlloc(const cv::Mat& image)
     {
-        auto multiplier = size_t{};
-        const auto imageSize = ComputeSize(image, &multiplier);
-        m_size = multiplier * imageSize;
+        m_size = image.dataend - image.datastart;
         cudaMalloc((void**)&m_deviceData, m_size);
-        cudaMemcpy(m_deviceData, image.data, imageSize, cudaMemcpyHostToDevice);
+        cudaMemcpy(m_deviceData, image.data, m_size, cudaMemcpyHostToDevice);
 
-        for (int i = 1; i < multiplier; ++i)
-        {
-            cudaMemcpy(m_deviceData + i * imageSize, m_deviceData, imageSize, cudaMemcpyDeviceToDevice);
-        }
-        m_pixelsCount = multiplier * image.rows * image.cols;
+        m_pixelsCount = static_cast<size_t>(image.rows) * image.cols;
     }
 
     DeviceAlloc(size_t size)
@@ -40,17 +35,13 @@ struct DeviceAlloc
         cudaMemset(m_deviceData, 0, m_size);
     }
 
-    static size_t ComputeSize(const cv::Mat& image, size_t* multiplier = nullptr)
-    {
-        // multiplier is the recommended multiplier so we don't try to allocate more memory than GPU has
-        if(multiplier) *multiplier = IMAGE_MULTIPLIER / (image.elemSize1() * image.channels());
-        return image.elemSize1() * image.channels() * image.rows * image.cols;
-        
-    }
+    DeviceAlloc(const DeviceAlloc&) = delete;
+    DeviceAlloc& operator=(const DeviceAlloc&) = delete;
 
     void CopyToHost(void* dst) const
     {
         cudaMemcpy(dst, m_deviceData, m_size, cudaMemcpyDeviceToHost);
+        cudaDeviceSynchronize();
     }
 
     ~DeviceAlloc()
