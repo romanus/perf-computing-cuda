@@ -126,6 +126,37 @@ void ReducePixelsBenchmark(const cv::Mat& image)
     std::cout << "------------------------------------\n" << std::endl;
 }
 
+void ParallelFilter(const cv::Mat input, const cv::Mat kernel, cv::Mat& output, int rowBegin, int rowEnd)
+{
+    // we don't use any locks here because writes don't lock each other
+    const auto inputRanged = input.rowRange(rowBegin, rowEnd);
+    const auto outputRanged = output.rowRange(rowBegin, rowEnd);
+
+    cv::sepFilter2D(inputRanged, outputRanged, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+}
+
+void Filter(const cv::Mat input, const cv::Mat kernel, cv::Mat& output, uint8_t threadCount)
+{
+    output.create(input.size(), input.type()); // assure we have enough memory allocated
+
+    auto* threads = new std::thread[threadCount];
+
+    const auto rowsPerThread = input.rows / threadCount;
+    for (int threadIdx = 0; threadIdx < threadCount; ++threadIdx)
+    {
+        const auto begin = threadIdx * rowsPerThread;
+        const auto end = begin + rowsPerThread;
+        threads[threadIdx] = std::thread(ParallelFilter, input, kernel, output, begin, end);
+    }
+
+    for (int threadIdx = 0; threadIdx < threadCount; ++threadIdx)
+    {
+        threads[threadIdx].join();
+    }
+
+    delete[] threads;
+}
+
 void FilterBenchmark(const cv::Mat& image)
 {
     std::cout << "----------- CONVOLUTION ------------\n";
@@ -135,13 +166,16 @@ void FilterBenchmark(const cv::Mat& image)
 
     const auto kernel = cv::getGaussianKernel(5, -1, CV_32F);
 
-    auto timer = MeasureTime("Computation time");
-    timer.Start();
+    for (const uint8_t threadCount : { 1, 2, 4, 8, 16, 32 })
+    {
+        auto timer = MeasureTime("Computation time (" + std::to_string(threadCount) + " threads)");
+        timer.Start();
 
-    cv::sepFilter2D(image, blurred, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+        Filter(inputImage, kernel, blurred, threadCount);
 
-    timer.Stop();
-    timer.Print();
+        timer.Stop();
+        timer.Print();
+    }
 
     std::cout << "------------------------------------\n" << std::endl;
 }

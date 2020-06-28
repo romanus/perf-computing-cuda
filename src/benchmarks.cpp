@@ -71,7 +71,7 @@ void FilterBenchmark(const cv::Mat& image)
     auto timer = MeasureTime("Computation time");
     timer.Start();
 
-    cv::sepFilter2D(image, blurred, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+    cv::sepFilter2D(inputImage, blurred, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
 
     timer.Stop();
     timer.Print();
