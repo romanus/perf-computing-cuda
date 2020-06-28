@@ -1,4 +1,4 @@
-# HW2
+# HW2-3
 
 ## Configuration
 
@@ -19,6 +19,8 @@ x64
 ## Src folder
 
 CPU code (tasks 1,2,3) is in `/src/benchmarks.cpp`.
+
+CPU Parallel code (tasks 1,2,3) is in `/src/benchmarks_parallel.cpp`.
 
 GPU code is in `/src/benchmarks.cu` (for tasks 1,2) and `/src/filter.cu` (for task 3).
 
@@ -42,19 +44,6 @@ Computation time: 182[ms]
 
 ----------- CONVOLUTION ------------
 Computation time: 220[ms]
-------------------------------------
-
-> Release\CPUParallelDemo.exe
---------- PIXELS SUMMATION ---------
-Computation time: 121[ms]
-------------------------------------
-
---------- PIXELS REDUCTION ---------
-Computation time: 197[ms]
-------------------------------------
-
------------ CONVOLUTION ------------
-Computation time: 172[ms]
 ------------------------------------
 
 PS C:\Users\trom\dev\uni\perf-computing-cuda\build> Release\CPUParallelDemo.exe

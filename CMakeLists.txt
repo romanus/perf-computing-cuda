@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.8 FATAL_ERROR)
 
-project (PerfComputingHW2 CXX CUDA)
+project (PerfComputingHW23 CXX CUDA)
 
 if(NOT DEFINED COMPUTE_VERSION)
     set(COMPUTE_VERSION "compute_75")
