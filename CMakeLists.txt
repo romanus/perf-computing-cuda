@@ -41,3 +41,14 @@ target_link_libraries (GPUDemo
     PRIVATE
     ${OpenCV_LIBS}
     cudadevrt)
+
+add_executable (CPUParallelDemo
+    src/main.cpp
+    src/benchmarks_parallel.cpp
+)
+set_target_properties(CPUParallelDemo PROPERTIES CXX_STANDARD 17)
+target_include_directories(CPUParallelDemo PRIVATE include)
+
+target_link_libraries (CPUParallelDemo
+    PRIVATE
+    ${OpenCV_LIBS})
