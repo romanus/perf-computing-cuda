@@ -44,6 +44,48 @@ Computation time: 182[ms]
 Computation time: 220[ms]
 ------------------------------------
 
+> Release\CPUParallelDemo.exe
+--------- PIXELS SUMMATION ---------
+Computation time: 121[ms]
+------------------------------------
+
+--------- PIXELS REDUCTION ---------
+Computation time: 197[ms]
+------------------------------------
+
+----------- CONVOLUTION ------------
+Computation time: 172[ms]
+------------------------------------
+
+PS C:\Users\trom\dev\uni\perf-computing-cuda\build> Release\CPUParallelDemo.exe
+--------- PIXELS SUMMATION ---------
+Computation time (1 threads): 125[ms]
+Computation time (2 threads): 61[ms]
+Computation time (4 threads): 41[ms]
+Computation time (8 threads): 33[ms]
+Computation time (16 threads): 31[ms]
+Computation time (32 threads): 33[ms]
+------------------------------------
+
+--------- PIXELS REDUCTION ---------
+Computation time (1 threads): 197[ms]
+Computation time (2 threads): 95[ms]
+Computation time (4 threads): 51[ms]
+Computation time (8 threads): 42[ms]
+Computation time (16 threads): 30[ms]
+Computation time (32 threads): 34[ms]
+------------------------------------
+
+----------- CONVOLUTION ------------
+Computation time (1 threads): 184[ms]
+Computation time (2 threads): 112[ms]
+Computation time (4 threads): 92[ms]
+Computation time (8 threads): 88[ms]
+Computation time (16 threads): 143[ms]
+Computation time (32 threads): 143[ms]
+Parallel algorithm matches OpenCV: true
+------------------------------------
+
 > Release\GPUDemo.exe
 --------- PIXELS SUMMATION ---------
 Computation time: 41[ms]

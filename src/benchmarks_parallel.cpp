@@ -177,5 +177,12 @@ void FilterBenchmark(const cv::Mat& image)
         timer.Print();
     }
 
+    // compare the output and OpenCV output
+    auto openCV_output = cv::Mat{};
+    cv::sepFilter2D(inputImage, openCV_output, CV_32F, kernel, kernel, cv::Point(-1, -1), 0, cv::BorderTypes::BORDER_CONSTANT);
+
+    const auto algoOutputEqual = std::equal(blurred.datastart, blurred.dataend, openCV_output.datastart);
+    std::cout << "Parallel algorithm matches OpenCV: " << std::boolalpha << algoOutputEqual << std::endl;
+
     std::cout << "------------------------------------\n" << std::endl;
 }
